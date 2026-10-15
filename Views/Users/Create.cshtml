@@ -1,0 +1,65 @@
+﻿@model EITSTMS.Models.ViewModels.Users.CreateUserViewModel
+
+@{
+    ViewData["Title"] = "新建用户";
+}
+
+<h2 class="mb-3">新建用户</h2>
+
+<form asp-controller="Users"
+      asp-action="Create"
+      method="post">
+
+     <!-- 只显示“模型级错误”，不把每个具体字段自己的错误重复显示在这里 -->
+    <div asp-validation-summary="ModelOnly"
+         class="text-danger mb-3">
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="UserName" class="form-label">用户名</label>
+        <input asp-for="UserName" class="form-control" />
+        <!-- 显示 UserName 字段的验证错误 -->
+        <span asp-validation-for="UserName" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="EmployeeNumber" class="form-label">员工编号</label>
+        <input asp-for="EmployeeNumber" class="form-control" />
+        <span asp-validation-for="EmployeeNumber" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Name" class="form-label">姓名</label>
+        <input asp-for="Name" class="form-control" />
+        <span asp-validation-for="Name" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Password" class="form-label">初始密码</label>
+        <input asp-for="Password" class="form-control" />
+        <span asp-validation-for="Password" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Role" class="form-label">角色</label>
+
+        <select asp-for="Role" class="form-select">
+            <option value="">请选择角色</option>
+            @foreach (string role in Model.AvailableRoles)
+            {
+                <option value="@role">@role</option>
+            }
+        </select>
+
+        <span asp-validation-for="Role" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary">创建</button>
+
+    <a asp-controller="Users"
+       asp-action="Index"
+       class="btn btn-secondary">
+        返回
+    </a>
+
+</form>

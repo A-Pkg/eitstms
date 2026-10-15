@@ -1,0 +1,57 @@
+﻿# ==========================================
+# 构建阶段：生成数据库迁移程序
+# ==========================================
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+
+WORKDIR /src
+
+# 先复制项目文件并还原依赖，利用构建缓存
+COPY ["EITSTMS.csproj", "./"]
+RUN dotnet restore "EITSTMS.csproj"
+
+# 复制经过 .dockerignore 筛选的项目源码
+COPY . .
+
+# 明确迁移工具使用的应用环境
+ENV ASPNETCORE_ENVIRONMENT=Production
+
+# 安装与项目 EF Core 包版本一致的工具
+# 工具只存在于构建阶段
+RUN dotnet tool install \
+    --tool-path /tools \
+    dotnet-ef \
+    --version 10.0.12
+
+# 创建迁移程序输出目录
+RUN mkdir -p /out
+
+# 根据项目已有的 Migration 生成迁移程序
+# 此时不连接数据库执行迁移
+RUN /tools/dotnet-ef migrations bundle \
+    --project "EITSTMS.csproj" \
+    --startup-project "EITSTMS.csproj" \
+    --context ApplicationDbContext \
+    --configuration Release \
+    --output /out/efbundle
+
+
+# ==========================================
+# 运行阶段：执行已经生成的迁移程序
+# ==========================================
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+
+WORKDIR /app
+
+ENV ASPNETCORE_ENVIRONMENT=Production
+
+# 复制迁移程序，并赋予读取和执行权限
+COPY --from=build --chmod=0555 /out/efbundle ./efbundle
+
+# 复制配置文件；密码由运行时的 Compose secrets 提供
+COPY --from=build /src/appsettings*.json ./
+
+# 使用非 root 用户运行
+USER app
+
+# 容器启动后执行迁移，完成后退出
+ENTRYPOINT ["/app/efbundle"]

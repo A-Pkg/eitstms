@@ -1,0 +1,25 @@
+﻿# 排除 windows 本机编译产生的文件，Docker 构建时会重新还原依赖、编译和发布
+# **/ 表示可以匹配任意层级的目录，* 表示通配符
+**/bin/
+**/obj/
+
+# 排除 Visual Studio 缓存和个人设置
+**/.vs/
+**/*.user
+**/*.suo
+
+# 排除 Git 版本历史
+.git/
+
+# 排除可能包含密码的本地环境变量文件
+**/.env
+**/.env.*
+
+# Compose 文件用于运行容器，不需要复制进 Web 构建阶段
+**/docker-compose*.yml
+**/docker-compose*.yaml
+**/compose*.yml
+**/compose*.yaml
+
+# 开发环境配置留在本机，不进入 Docker 构建上下文
+**/appsettings.Development.json

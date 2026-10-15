@@ -1,0 +1,67 @@
+﻿@using EITSTMS.Models.ViewModels.Tickets
+@model AssignTicketViewModel
+
+@{
+    ViewData["Title"] = "分配工单";
+}
+
+<h2 class="mb-3">分配工单</h2>
+
+<div class="card">
+    <div class="card-body">
+
+        <div class="mb-3">
+            <label class="form-label text-muted">工单编号</label>
+            <div>@Model.TicketNumber</div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label text-muted">工单标题</label>
+            <div>@Model.Title</div>
+        </div>
+
+        <form asp-controller="Tickets"
+              asp-action="Assign"
+              method="post">
+
+            <input asp-for="TicketId"
+                   type="hidden" />
+
+            <div class="mb-3">
+                <label asp-for="TechnicianId"
+                       class="form-label">
+                    技术人员
+                </label>
+
+                <select asp-for="TechnicianId"
+                        asp-items="Model.Technicians"
+                        class="form-select">
+
+                    <option value="">请选择技术人员</option>
+
+                </select>
+
+                <span asp-validation-for="TechnicianId"
+                      class="text-danger">
+                </span>
+            </div>
+
+            <button type="submit"
+                    class="btn btn-primary">
+                确认分配
+            </button>
+
+            <a asp-controller="Tickets"
+               asp-action="Index"
+               class="btn btn-secondary">
+                返回
+            </a>
+
+        </form>
+
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

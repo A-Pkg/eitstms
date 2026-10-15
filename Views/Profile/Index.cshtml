@@ -1,0 +1,71 @@
+﻿@model EITSTMS.Models.ViewModels.Profile.ProfileViewModel
+
+@{
+    ViewData["Title"] = "个人中心";
+}
+
+<h2 class="mb-3">个人中心</h2>
+
+<div class="card">
+    <div class="card-body">
+
+        <div class="mb-3">
+            <label class="form-label text-muted">用户名</label>
+            <div>@Model.UserName</div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label text-muted">员工编号</label>
+            <div>@Model.EmployeeNumber</div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label text-muted">姓名</label>
+            <div>@Model.Name</div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label text-muted">部门</label>
+            <div>
+                @(string.IsNullOrEmpty(Model.DepartmentName)
+                    ? "未分配"
+                    : Model.DepartmentName)
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label text-muted">角色</label>
+            <div>
+                <span class="badge bg-primary">
+                    @Model.Role
+                </span>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label text-muted">账号状态</label>
+            <div>
+                @if (Model.IsActive)
+                {
+                    <span class="badge bg-success">启用</span>
+                }
+                else
+                {
+                    <span class="badge bg-secondary">禁用</span>
+                }
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label text-muted">创建时间</label>
+            <div>@Model.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</div>
+        </div>
+
+        <a asp-controller="Profile"
+           asp-action="ChangePassword"
+           class="btn btn-primary">
+            修改密码
+        </a>
+
+    </div>
+</div>

@@ -1,0 +1,63 @@
+﻿@using EITSTMS.Models.Entities
+@model List<Asset>
+
+@{
+    ViewData["Title"] = "资产管理";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+
+    <h2>资产管理</h2>
+
+    @if (User.IsInRole("Admin"))
+    {
+        <a asp-controller="Assets"
+           asp-action="Create"
+           class="btn btn-primary">
+            添加资产
+        </a>
+    }
+
+</div>
+
+@if (Model.Count == 0)
+{
+    <p class="text-muted">当前没有资产。</p>
+}
+else
+{
+    <div class="table-responsive">
+
+        <table class="table table-hover align-middle">
+
+            <thead class="table-light">
+                <tr>
+                    <th>资产编号</th>
+                    <th>资产名称</th>
+                    <th>分类</th>
+                    <th>状态</th>
+                    <th>厂商</th>
+                    <th>型号</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                @foreach (Asset asset in Model)
+                {
+                    <tr>
+                        <td>@asset.AssetNumber</td>
+                        <td>@asset.AssetName</td>
+                        <td>@asset.Category</td>
+                        <td>@asset.Status</td>
+                        <td>@asset.Manufacturer</td>
+                        <td>@asset.Model</td>
+                    </tr>
+                }
+
+            </tbody>
+
+        </table>
+
+    </div>
+}

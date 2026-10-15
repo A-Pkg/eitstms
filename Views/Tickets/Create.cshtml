@@ -1,0 +1,76 @@
+﻿@using EITSTMS.Models.ViewModels.Tickets
+@model CreateTicketViewModel
+
+@{
+    ViewData["Title"] = "创建工单";
+}
+
+<h2 class="mb-3">创建工单</h2>
+
+<form asp-controller="Tickets"
+      asp-action="Create"
+      method="post">
+
+    <div asp-validation-summary="ModelOnly"
+         class="text-danger mb-3">
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Title" class="form-label">工单标题</label>
+        <input asp-for="Title" class="form-control" />
+        <span asp-validation-for="Title" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Description" class="form-label">问题描述</label>
+        <textarea asp-for="Description"
+                  class="form-control"
+                  rows="6">
+        </textarea>
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="CategoryId" class="form-label">工单分类</label>
+
+        <select asp-for="CategoryId"
+                asp-items="Model.Categories"
+                class="form-select">
+
+            <option value="">请选择工单分类</option>
+
+        </select>
+
+        <span asp-validation-for="CategoryId" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="RelatedAssetId" class="form-label">相关资产</label>
+
+        <select asp-for="RelatedAssetId"
+                asp-items="Model.Assets"
+                class="form-select">
+
+            <option value="">无相关资产</option>
+
+        </select>
+
+        <span asp-validation-for="RelatedAssetId" class="text-danger"></span>
+    </div>
+
+    <button type="submit"
+            class="btn btn-primary">
+        提交工单
+    </button>
+
+    <a asp-controller="Tickets"
+       asp-action="Index"
+       class="btn btn-secondary">
+        返回我的工单
+    </a>
+
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

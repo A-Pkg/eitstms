@@ -1,0 +1,282 @@
+﻿services:
+
+  # ==========================================
+  # SQL Server 数据库服务
+  # ==========================================
+  sqlserver:
+
+    # SQL Server 2022 官方 Linux 镜像
+    image: mcr.microsoft.com/mssql/server:2022-latest
+
+    # 固定容器名称，方便查看日志和执行管理命令
+    container_name: eitstms-sqlserver
+
+    environment:
+      # 接受 SQL Server 许可协议
+      ACCEPT_EULA: "Y"
+
+    # 允许该服务读取指定的机密文件
+    # 容器内路径：/run/secrets/sql_sa_password
+    secrets:
+      - sql_sa_password
+
+    # 用 Bash 执行下面的启动脚本
+    # -e：命令失败时退出
+    # -c：将 command 中的字符串作为脚本执行
+    entrypoint:
+      - /bin/bash
+      - -ec
+
+    # 从机密文件读取 sa 密码，再提供给数据库进程
+    # $$：避免 Compose 提前处理 $，交给容器内的 Shell 处理
+    # tr：去掉文件中的回车、换行符
+    # 读取与 export 分开，使读取失败能够触发 -e
+    # exec：用数据库进程替换当前 Shell
+    #
+    # 注意：这里覆盖了镜像默认入口，直接启动数据库引擎，
+    # 不执行镜像默认入口脚本中的额外初始化逻辑。
+    command:
+      - |
+        MSSQL_SA_PASSWORD="$$(tr -d '\r\n' < /run/secrets/sql_sa_password)"
+        export MSSQL_SA_PASSWORD
+        exec /opt/mssql/bin/sqlservr
+
+    # 宿主机 1433 → 容器 1433
+    # 当前会发布到宿主机所有网络接口，方便本机 SSMS 连接
+    # 正式部署时，需要按访问需求限制绑定地址或取消发布
+    ports:
+      - "1433:1433"
+
+    # 将数据库目录挂载到命名数据卷
+    # 删除、重建容器不会自动删除该命名卷
+    # 持久化卷不等于数据库备份
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+
+    # 定期执行查询，检查数据库能否接受连接并完成查询
+    healthcheck:
+
+      # CMD-SHELL：通过容器内的 Shell 执行命令
+      # SQLCMDPASSWORD：仅向这次 sqlcmd 进程提供登录密码
+      # -S localhost：连接当前容器中的数据库
+      # -U sa：使用 sa 登录
+      # -C：信任服务器证书，当前用于本地容器测试
+      # -b：SQL 执行出错时返回失败状态
+      # -l 5：登录超时为 5 秒
+      # -t 5：查询超时为 5 秒
+      # -Q：执行查询后退出
+      # > /dev/null：丢弃标准输出，错误输出仍保留
+      test:
+        - CMD-SHELL
+        - >-
+          SQLCMDPASSWORD="$$(tr -d '\r\n' < /run/secrets/sql_sa_password)"
+          /opt/mssql-tools18/bin/sqlcmd
+          -S localhost -U sa -C -b -l 5 -t 5
+          -Q "SELECT 1" > /dev/null
+
+      # 常规检查间隔
+      interval: 10s
+
+      # 单次健康检查允许的最长时间
+      timeout: 10s
+
+      # 启动宽限期：期间仍会检查，但失败通常不计入重试次数
+      # 不是强制等待 60 秒，检查成功即可进入 healthy 状态
+      start_period: 60s
+
+      # 连续失败达到该次数后，标记为 unhealthy
+      # unhealthy 本身不会自动重启容器
+      retries: 12
+
+
+  # ==========================================
+  # EF Core 数据库迁移服务
+  # 执行构建好的 efbundle，完成后退出
+  # ==========================================
+  migration:
+
+    # 专用迁移镜像名称
+    image: eitstms-migration
+
+    # 使用独立的 Dockerfile 构建迁移镜像
+    build:
+      context: .
+      dockerfile: Dockerfile.migration
+
+    container_name: eitstms-migration
+
+    # 等 SQL Server 健康检查通过后再执行迁移
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+
+    # 迁移连接字符串由 secrets 提供
+    # 容器内文件名对应 ConnectionStrings:EITSTMSConnection
+    secrets:
+      - source: migration_connection
+        target: ConnectionStrings__EITSTMSConnection
+
+    # Dockerfile.migration 的 ENTRYPOINT 负责启动 efbundle
+    # 不再挂载源码，也不在启动时安装工具和编译
+    # 执行完成后不自动重启
+    restart: "no"
+
+
+  # ==========================================
+  # 数据库应用账号初始化服务
+  # 只运行 SQL 客户端，不启动第二个数据库引擎
+  # ==========================================
+  db-init:
+
+    # 复用镜像中提供的 sqlcmd 工具
+    image: mcr.microsoft.com/mssql/server:2022-latest
+
+    container_name: eitstms-db-init
+
+    # 等迁移成功完成后再执行账号初始化脚本
+    depends_on:
+      migration:
+        condition: service_completed_successfully
+
+    # 本机脚本目录 → 容器 /scripts
+    # ro：只读挂载，防止容器修改本机脚本
+    volumes:
+      - ./docker/sqlserver:/scripts:ro
+
+    # 初始化需要 sa 密码和应用账号密码
+    secrets:
+      - sql_sa_password
+      - app_db_password
+
+    # 覆盖默认入口，只执行下面的初始化脚本
+    entrypoint:
+      - /bin/bash
+      - -ec
+
+    command:
+      - |
+        SQLCMDPASSWORD="$$(tr -d '\r\n' < /run/secrets/sql_sa_password)"
+        APP_DB_PASSWORD="$$(tr -d '\r\n' < /run/secrets/app_db_password)"
+
+        # 将密码中的一个单引号替换为两个单引号
+        # Bash 参数替换不执行密码内容，不使用 eval
+        APP_DB_PASSWORD_SQL="$${APP_DB_PASSWORD//\'/\'\'}"
+
+        # sa 密码用于登录；转义后的应用密码供 SQL 脚本读取
+        export SQLCMDPASSWORD APP_DB_PASSWORD_SQL
+
+        # 执行初始化；失败时由 bash -e 终止
+        /opt/mssql-tools18/bin/sqlcmd \
+          -S sqlserver -U sa -C -b -f 65001 \
+          -i /scripts/init-app-user.sql
+
+        # 用应用账号实际登录，验证密码和数据库访问
+        # 已有账号密码不一致、账号被禁用等情况都会使初始化失败
+        SQLCMDPASSWORD="$$APP_DB_PASSWORD"
+        export SQLCMDPASSWORD
+
+        exec /opt/mssql-tools18/bin/sqlcmd \
+          -S sqlserver -U eitstms_app -d EITSTMSDb \
+          -C -b -l 10 -Q "SELECT 1" > /dev/null
+
+    # 执行完后不由 Docker 自动重启
+    # 不代表脚本永远只运行一次，脚本仍需支持重复执行
+    restart: "no"
+
+
+  # ==========================================
+  # ASP.NET Core Web 服务
+  # ==========================================
+  web:
+
+    # Web 镜像名称；未写标签时默认使用 latest
+    image: eitstms
+
+    # 指定镜像的构建方式
+    # 构建上下文为 Compose 文件所在目录
+    # 修改代码后使用 up --build，明确要求重新构建
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: eitstms-web
+
+    # 等应用账号初始化成功完成后再启动 Web
+    # 该依赖间接包含：数据库健康 → 迁移成功 → 账号初始化成功
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+
+    # 宿主机 8080 → 容器 8080
+    # 应用本身也必须监听容器内的 8080 端口
+    ports:
+      - "8080:8080"
+
+    environment:
+      # 生产环境配置
+      ASPNETCORE_ENVIRONMENT: Production
+
+      # 初始化管理员用户名，作为普通配置保留
+      SeedAdmin__UserName: "Admin"
+
+    # Web 只获得应用连接字符串和初始化管理员密码
+    # 不向 Web 授予 sa 密码文件
+    secrets:
+
+      # 对应配置：ConnectionStrings:EITSTMSConnection
+      - source: web_connection
+        target: ConnectionStrings__EITSTMSConnection
+
+      # 对应配置：SeedAdmin:Password
+      - source: seed_admin_password
+        target: SeedAdmin__Password
+
+
+# ==========================================
+# 命名数据卷声明
+# ==========================================
+volumes:
+
+  # Compose 内部引用的数据卷名称
+  sqlserver_data:
+
+    # Docker 中实际的数据卷名称
+    # 不存在时创建，已经存在时复用
+    # 指定这个名称不代表每次启动都初始化新数据库
+    name: eitstms_sqlserver_data_v1
+
+
+# ==========================================
+# 机密文件来源声明
+# 这里声明来源，各服务内部的 secrets 再授予读取权限
+#
+# ../ 表示 Compose 文件所在目录的上一级
+# eitstms-secrets 与 EITSTMS 项目文件夹同级
+#
+# 普通 Compose 的文件型 secrets 通过文件挂载提供内容，
+# 不会加密本机源文件；源文件不得提交到 Git。
+# ==========================================
+secrets:
+
+  # SQL Server sa 密码
+  sql_sa_password:
+    file: ../eitstms-secrets/sa-password.txt
+
+  # 创建应用数据库登录账号时使用的密码
+  app_db_password:
+    file: ../eitstms-secrets/app-db-password.txt
+
+  # 迁移连接字符串：目前仍使用 sa，后续改用独立部署账号
+  migration_connection:
+    file: ../eitstms-secrets/migration-connection.txt
+
+  # Web 连接字符串：使用 eitstms_app
+  web_connection:
+    file: ../eitstms-secrets/web-connection.txt
+
+  # 网站初始化管理员密码
+  seed_admin_password:
+    file: ../eitstms-secrets/seed-admin-password.txt

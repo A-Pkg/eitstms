@@ -1,0 +1,312 @@
+﻿@using EITSTMS.Models.Entities
+@model List<Ticket>
+
+@{
+    ViewData["Title"] = ViewData["PageTitle"];
+}
+
+<!-- 显示工单创建成功的提示信息 -->
+@if (TempData["TicketSuccess"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["TicketSuccess"]
+    </div>
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>@ViewData["PageTitle"]</h2>
+
+    @if (User.IsInRole("Employee"))
+    {
+        <a asp-controller="Tickets"
+           asp-action="Create"
+           class="btn btn-primary">
+            创建工单
+        </a>
+    }
+</div>
+
+<!-- 工单分类管理（仅管理员可见） -->
+@if (User.IsInRole("Admin"))
+{
+    <div class="card mb-3">
+        <div class="card-body">
+
+            <h5 class="card-title mb-3">工单分类</h5>
+
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+
+                @if (ViewBag.Categories == null ||
+                     ((List<TicketCategory>)ViewBag.Categories).Count == 0)
+                {
+                    <span class="badge bg-secondary">
+                        无
+                    </span>
+                }
+                else
+                {
+                    @foreach (TicketCategory category in ViewBag.Categories)
+                    {
+                        <div class="d-inline-flex align-items-center gap-1 me-2 mb-2">
+
+                            <span class="badge bg-secondary">
+                                @category.CategoryName
+                            </span>
+
+                            <form asp-controller="Tickets"
+                                  asp-action="DeleteCategory"
+                                  method="post"
+                                  class="d-inline">
+
+                                <input type="hidden"
+                                       name="id"
+                                       value="@category.CategoryId" />
+
+                                <button type="submit"
+                                        class="btn btn-outline-danger btn-sm">
+                                    删除
+                                </button>
+
+                            </form>
+
+                        </div>
+                    }
+                }
+
+                <button type="button"
+                        class="btn btn-outline-primary btn-sm"
+                        data-bs-toggle="modal"
+                        data-bs-target="#addCategoryModal">
+                    添加分类
+                </button>
+
+            </div>
+
+            @if (TempData["CategoryError"] != null)
+            {
+                <div class="alert alert-danger mt-3 mb-0">
+                    @TempData["CategoryError"]
+                </div>
+            }
+
+            @if (TempData["CategorySuccess"] != null)
+            {
+                <div class="alert alert-success mt-3 mb-0">
+                    @TempData["CategorySuccess"]
+                </div>
+            }
+
+        </div>
+    </div>
+
+    <div class="modal fade"
+         id="addCategoryModal"
+         tabindex="-1">
+
+        <div class="modal-dialog">
+
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        添加工单分类
+                    </h5>
+
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal">
+                    </button>
+                </div>
+
+                <form asp-controller="Tickets"
+                      asp-action="AddCategory"
+                      method="post">
+
+                    <div class="modal-body">
+
+                        <div class="mb-3">
+                            <label class="form-label">
+                                分类名称
+                            </label>
+
+                            <input type="text"
+                                   name="categoryName"
+                                   class="form-control"
+                                   placeholder="请输入分类名称" />
+                        </div>
+
+                    </div>
+
+                    <div class="modal-footer">
+
+                        <button type="button"
+                                class="btn btn-secondary"
+                                data-bs-dismiss="modal">
+                            取消
+                        </button>
+
+                        <button type="submit" class="btn btn-primary">添加</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- 工单列表 -->
+@if (Model == null || Model.Count == 0)
+{
+    <p class="text-muted">当前没有工单。</p>
+}
+else
+{
+    <div class="table-responsive">
+
+        <table class="table table-hover align-middle">
+
+            <thead class="table-light">
+                <tr>
+                    <th>工单编号</th>
+                    <th>标题</th>
+                    <th>状态</th>
+                    <th>优先级</th>
+                    <th>创建时间</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach (EITSTMS.Models.Entities.Ticket ticket in Model)
+                {
+                    <tr>
+                        <td>@ticket.TicketNumber</td>
+
+                        <td>@ticket.Title</td>
+
+                        <td id="ticket-status-@ticket.TicketId">@ticket.Status</td>
+
+                        <td>@ticket.Priority</td>
+
+                        <td>
+                            @ticket.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")
+                        </td>
+                        <td>
+                            <a asp-controller="Tickets"
+                                asp-action="Details"
+                                asp-route-id="@ticket.TicketId"
+                                class="btn btn-outline-primary btn-sm">
+                                查看
+                            </a>
+
+                            @if (User.IsInRole("Technician") && ticket.Status == EITSTMS.Models.Enums.TicketStatus.Assigned)
+                            {
+                                <form asp-controller="Tickets"
+                                      asp-action="Start"
+                                      asp-route-id="@ticket.TicketId"
+                                      method="post"
+                                      class="d-inline">
+
+                                    <button type="submit"
+                                            class="btn btn-outline-success btn-sm">
+                                        开始处理
+                                    </button>
+                                </form>
+                            }
+
+                            @if (User.IsInRole("Technician") && ticket.Status == EITSTMS.Models.Enums.TicketStatus.InProgress)
+                            {
+                                <a asp-controller="Tickets"
+                                   asp-action="RequestInformation"
+                                   asp-route-id="@ticket.TicketId"
+                                   class="btn btn-outline-warning btn-sm">
+                                    请求补充信息
+                                </a>
+                            }
+
+                            @if (User.IsInRole("Technician") && ticket.Status == EITSTMS.Models.Enums.TicketStatus.InProgress)
+                            {
+                                <a asp-controller="Tickets"
+                                   asp-action="Complete"
+                                   asp-route-id="@ticket.TicketId"
+                                   class="btn btn-outline-success btn-sm">
+                                    完成
+                                </a>
+                            }
+
+                            @if (User.IsInRole("Employee") && ticket.Status == EITSTMS.Models.Enums.TicketStatus.WaitingForUser)
+                            {
+                                <a asp-controller="Tickets"
+                                   asp-action="AddSupplement"
+                                   asp-route-id="@ticket.TicketId"
+                                   class="btn btn-outline-warning btn-sm">
+                                    补充信息
+                                </a>
+                            }
+
+                            @if (User.IsInRole("Employee") && ticket.Status == EITSTMS.Models.Enums.TicketStatus.Completed)
+                            {
+                                <form asp-controller="Tickets"
+                                      asp-action="Close"
+                                      asp-route-id="@ticket.TicketId"
+                                      method="post"
+                                      class="d-inline">
+
+                                    <button type="submit"
+                                            class="btn btn-outline-success btn-sm">
+                                        关闭工单
+                                    </button>
+
+                                </form>
+                            }
+
+                            @if (User.IsInRole("Admin") && ticket.Status == EITSTMS.Models.Enums.TicketStatus.Open)
+                            {
+                                <a asp-controller="Tickets"
+                                   asp-action="Assign"
+                                   asp-route-id="@ticket.TicketId"
+                                   class="btn btn-outline-primary btn-sm">
+                                    分配
+                                </a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+
+        </table>
+
+    </div>
+}
+@* @section Scripts
+{
+    <script>
+        // 每隔3秒自动刷新当前页面,粗颗粒度刷新
+        // location.reload() 会重新请求浏览器当前所在的 URL
+        // 如果当前页面是 /Tickets，则会重新执行 Index()
+        // 如果当前页面是 /Tickets/Details/1，则会重新执行 Details(1)
+        // 页面重新加载后，会重新查询数据库获取最新数据
+        setInterval(function ()
+        {
+            location.reload();
+        }, 3000);
+    </script>
+} *@
+
+<script>
+    setInterval(function ()
+    {
+        document
+            .querySelectorAll("[id^='ticket-status-']")
+            .forEach(function(element)
+            {
+                let id = element.id.replace("ticket-status-", "");
+
+                fetch('/Tickets/GetStatus?id=' + id)
+                    .then(response => response.json())
+                    .then(data =>
+                    {
+                        element.innerText = data.status;
+                    });
+            });
+    },3000);
+</script>

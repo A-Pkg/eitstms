@@ -1,0 +1,94 @@
+﻿@using EITSTMS.Models.ViewModels.Tickets
+@using EITSTMS.Extensions
+@model List<TicketHistoryItemViewModel>
+
+@{
+    ViewData["Title"] = "工单历史";
+}
+
+<h2 class="mb-3">工单历史</h2>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <form asp-action="Index" method="get">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">工单编号</label>
+                    <input type="text" name="TicketNumber"class="form-control" />
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">操作类型</label>
+
+                    <select name="ActionType" class="form-select">
+                        <option value="">全部</option>
+                        <option value="Created">创建工单</option>
+                        <option value="Assigned">分配技术人员</option>
+                        <option value="Completed">完成处理</option>
+                        <option value="Closed">关闭工单</option>
+                        <option value="AutoClosed">系统自动关闭</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label">开始时间</label>
+                    <input type="date" name="StartDate" class="form-control" />
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label">结束时间</label>
+                    <input type="date" name="EndDate" class="form-control" />
+                </div>
+
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary">查询</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+
+        @if (Model == null || Model.Count == 0)
+        {
+            <p class="text-muted">暂无历史记录。</p>
+        }
+        else
+        {
+            <table class="table table-hover align-middle">
+
+                <thead class="table-light">
+                    <tr>
+                        <th>工单编号</th>
+                        <th>操作人</th>
+                        <th>操作类型</th>
+                        <th>状态变化</th>
+                        <th>说明</th>
+                        <th>时间</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (TicketHistoryItemViewModel history in Model)
+                    {
+                        <tr>
+                            <td>@history.TicketNumber</td>
+
+                            <td>@history.PerformedByName</td>
+
+                            <td>@history.ActionType.ToDisplayName()</td>
+
+                            <td>@(history.FromStatus == null ? "-": history.FromStatus + " → " + history.ToStatus)</td>
+
+                            <td>@history.Description</td>
+
+                            <td>@history.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>

@@ -1,0 +1,16 @@
+﻿# Visual Studio 缓存和个人设置
+**/.vs/
+**/*.user
+**/*.suo
+
+# 编译产物
+**/bin/
+**/obj/
+
+# 本地机密文件
+**/.env
+**/.env.*
+**/eitstms-secrets/
+
+# 本机开发配置，包含本地数据库密码
+**/appsettings.Development.json

@@ -1,0 +1,65 @@
+﻿@using EITSTMS.Models.Entities
+
+@model Ticket
+
+@{
+    ViewData["Title"] = "补充信息";
+}
+
+<h2 class="mb-3">
+    补充信息
+</h2>
+
+<div class="card">
+    <div class="card-body">
+
+        <div class="mb-3">
+            <label class="form-label">工单编号</label>
+
+            <div>
+                @Model.TicketNumber
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">需要补充的信息</label>
+
+            <div>
+                @Model.InformationRequest
+            </div>
+        </div>
+
+
+        <form asp-action="AddSupplement"
+              method="post">
+
+            <input type="hidden"
+                   name="id"
+                   value="@Model.TicketId" />
+
+            <div class="mb-3">
+                <label class="form-label">
+                    补充内容
+                </label>
+
+                <textarea name="content"
+                          class="form-control"
+                          rows="5"
+                          required></textarea>
+            </div>
+
+
+            <button type="submit"
+                    class="btn btn-primary">
+                提交补充
+            </button>
+
+            <a asp-action="Index"
+               class="btn btn-secondary">
+                返回
+            </a>
+
+        </form>
+
+    </div>
+</div>

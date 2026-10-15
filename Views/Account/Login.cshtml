@@ -1,0 +1,70 @@
+﻿@model EITSTMS.Models.ViewModels.Account.LoginViewModel
+
+@{
+    ViewData["Title"] = "登录";
+    Layout = "_AuthLayout";
+}
+
+<div class="login-card">
+
+    <div class="login-card-header">
+        <h2>用户登录</h2>
+        <p>请输入您的账号和密码</p>
+    </div>
+
+    <form asp-controller="Account"
+          asp-action="Login"
+          method="post">
+
+        <div asp-validation-summary="ModelOnly"
+             class="text-danger login-validation">
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="UserName"
+                   class="form-label">
+                用户名
+            </label>
+
+            <input asp-for="UserName"
+                   class="form-control"
+                   placeholder="请输入用户名" />
+
+            <span asp-validation-for="UserName"
+                  class="text-danger">
+            </span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Password"
+                   class="form-label">
+                密码
+            </label>
+
+            <input asp-for="Password"
+                   class="form-control"
+                   placeholder="请输入密码" />
+
+            <span asp-validation-for="Password"
+                  class="text-danger">
+            </span>
+        </div>
+
+        <div class="form-check mb-4">
+            <input asp-for="RememberMe"
+                   class="form-check-input" />
+
+            <label asp-for="RememberMe"
+                   class="form-check-label">
+                记住我
+            </label>
+        </div>
+
+        <button type="submit"
+                class="btn btn-primary login-button">
+            登录
+        </button>
+
+    </form>
+
+</div>

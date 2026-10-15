@@ -1,0 +1,158 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - EITSTMS</title>
+    <script type="importmap"></script>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/layout.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/EITSTMS.styles.css" asp-append-version="true" />
+</head>
+<body>
+    <!-- 顶部 -->
+    <header class="top-header">
+        <div>
+            <a asp-controller="Home"
+               asp-action="Index"
+               class="system-title text-decoration-none">
+                企业 IT 服务工单管理平台
+            </a>
+        </div>
+
+        <div class="user-area">
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <span>
+                    当前用户：
+                    <span class="badge bg-White">
+                        @User.Identity.Name
+                    </span>
+                </span>
+
+                <a asp-controller="Profile"
+                   asp-action="Index"
+                   class="btn btn-outline-light btn-sm">
+                    个人中心
+                </a>
+
+                <form asp-controller="Account"
+                      asp-action="Logout"
+                      method="post">
+
+                    <button type="submit"
+                            class="btn btn-outline-secondary btn-sm">
+                        退出
+                    </button>
+                </form>
+            }
+            else
+            {
+                <a asp-controller="Account"
+                   asp-action="Login"
+                   class="btn btn-outline-primary btn-sm">
+                    登录
+                </a>
+            }
+        </div>
+    </header>
+
+    <!-- 中间主体 -->
+    <div class="main-wrapper">
+        <!-- 左侧菜单 -->
+        <aside class="sidebar">
+            @{
+                // 获取当前控制器和动作名称
+                string? currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+				// 获取当前动作名称,可用于子菜单高亮显示
+                //string? currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+            }
+            <nav class="nav flex-column">
+
+                <a class="nav-link @(currentController == "Home" ? "active" : "")"
+                   asp-controller="Home"
+                   asp-action="Index">
+                    首页
+                </a>
+
+                @if (User.IsInRole("Employee"))
+                {
+                    <a class="nav-link @(currentController == "Tickets" ? "active" : "")"
+                       asp-controller="Tickets"
+                       asp-action="Index">
+                        我的工单
+                    </a>
+                }
+                else if (User.IsInRole("Technician"))
+                {
+                    <a class="nav-link @(currentController == "Tickets" ? "active" : "")"
+                       asp-controller="Tickets"
+                       asp-action="Index">
+                        我的任务
+                    </a>
+                }
+                else if (User.IsInRole("Admin"))
+                {
+                    <a class="nav-link @(currentController == "Tickets" ? "active" : "")"
+                       asp-controller="Tickets"
+                       asp-action="Index">
+                        工单管理
+                    </a>
+                }
+
+                @if (User.IsInRole("Technician") || User.IsInRole("Admin"))
+                {
+                    <a class="nav-link @(currentController == "Assets" ? "active" : "")"
+                        asp-controller="Assets"
+                        asp-action="Index">
+                        资产管理
+                    </a>
+                }
+
+                @if (User.IsInRole("Admin"))
+                {
+                    <a class="nav-link @(currentController == "Users" ? "active" : "")"
+                       asp-controller="Users"
+                       asp-action="Index">
+                        用户管理
+                    </a>
+                }
+
+                @if (User.HasClaim("IsSystemAdmin", "true"))
+                {
+                    <a class="nav-link @(currentController == "TicketHistories" ? "active" : "")"
+                       asp-controller="TicketHistories"
+                       asp-action="Index">
+                        工单历史
+                    </a>
+                }
+            </nav>
+        </aside>
+
+        <!-- 右侧页面内容 -->
+        <main class="content-area">
+            <div class="content-card">@RenderBody()</div>
+        </main>
+    </div>
+
+    <!-- 底部 -->
+    <footer class="footer">
+        <div class="d-flex justify-content-between">
+            <span>© 2026 EITSTMS</span>
+
+            <a asp-controller="Home"
+               asp-action="Privacy">
+                Privacy
+            </a>
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+
+</body>
+</html>

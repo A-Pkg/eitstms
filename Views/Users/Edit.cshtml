@@ -1,0 +1,65 @@
+﻿@model EITSTMS.Models.ViewModels.Users.EditUserViewModel
+
+@{
+    ViewData["Title"] = "编辑用户";
+}
+
+<h2 class="mb-3">编辑用户</h2>
+
+<form asp-controller="Users"
+      asp-action="Edit"
+      method="post">
+
+    <!-- 隐藏字段：提交时把当前用户 Id 一起传回 Controller -->
+    <input asp-for="Id" type="hidden" />
+
+    <!-- 只显示模型级错误 -->
+    <div asp-validation-summary="ModelOnly"
+         class="text-danger mb-3">
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="UserName" class="form-label">用户名</label>
+        <input asp-for="UserName" class="form-control" readonly />
+        <span asp-validation-for="UserName" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="EmployeeNumber" class="form-label">员工编号</label>
+        <input asp-for="EmployeeNumber" class="form-control" />
+        <span asp-validation-for="EmployeeNumber" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Name" class="form-label">姓名</label>
+        <input asp-for="Name" class="form-control" />
+        <span asp-validation-for="Name" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Role" class="form-label">角色</label>
+
+        <select asp-for="Role" class="form-select">
+            @foreach (string role in Model.AvailableRoles)
+            {
+                <option value="@role">@role</option>
+            }
+        </select>
+
+        <span asp-validation-for="Role" class="text-danger"></span>
+    </div>
+
+    <div class="form-check mb-3">
+        <input asp-for="IsActive" class="form-check-input" />
+        <label asp-for="IsActive" class="form-check-label">启用账号</label>
+    </div>
+
+    <button type="submit" class="btn btn-primary">保存</button>
+
+    <a asp-controller="Users"
+       asp-action="Index"
+       class="btn btn-secondary">
+        返回
+    </a>
+
+</form>

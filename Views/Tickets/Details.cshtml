@@ -1,0 +1,177 @@
+﻿@using EITSTMS.Models.ViewModels.Tickets
+@model TicketDetailsViewModel
+
+@{
+    ViewData["Title"] = "工单详情";
+}
+
+<h2 class="mb-3">工单详情</h2>
+
+<div class="card">
+    <div class="card-body">
+
+        <div class="mb-3">
+            <label class="form-label text-muted">工单编号</label>
+            <div>@Model.TicketNumber</div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label text-muted">标题</label>
+            <div>@Model.Title</div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label text-muted">问题描述</label>
+            <div>@Model.Description</div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label text-muted">工单分类</label>
+            <div>@Model.CategoryName</div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label text-muted">优先级</label>
+            <div>@Model.Priority</div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label text-muted">状态</label>
+            <div>@Model.Status</div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label text-muted">创建人</label>
+            <div>@Model.CreatedByName</div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label text-muted">负责人</label>
+
+            <div>
+                @(string.IsNullOrEmpty(Model.AssignedToName) ? "未分配" : Model.AssignedToName)
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label text-muted">相关资产</label>
+
+            <div>
+                @(string.IsNullOrEmpty(Model.RelatedAssetName) ? "无" : Model.RelatedAssetName)
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.Resolution))
+        {
+            <div class="mb-3">
+                <label class="form-label text-muted">处理结果</label>
+
+                <div>
+                    @Model.Resolution
+                </div>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(Model.InformationRequest))
+        {
+            <div class="mb-3">
+                <label class="form-label text-muted">
+                    需要补充的信息
+                </label>
+
+                <div>
+                    @Model.InformationRequest
+                </div>
+            </div>
+        }
+
+        <div class="mb-3">
+            <label class="form-label text-muted">补充信息记录</label>
+
+            @if (Model.Supplements == null || Model.Supplements.Count == 0)
+            {
+                <div>
+                    无
+                </div>
+            }
+            else
+            {
+                <table class="table table-bordered">
+
+                    <thead>
+                        <tr>
+                            <th>操作人</th>
+                            <th>类型</th>
+                            <th>内容</th>
+                            <th>时间</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                    @foreach (TicketSupplementItemViewModel supplement in Model.Supplements)
+                    {
+                        <tr>
+                            <td>@supplement.UserName</td>
+                            <td>@supplement.Type </td>
+                            <td>@supplement.Content</td>
+                            <td>@supplement.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label text-muted">工单时间</label>
+            <table class="table table-bordered">
+                <tbody>
+                    <tr>
+                        <th>创建时间</th>
+                        <td>@Model.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                    </tr>
+
+                    @if (Model.AssignedAt.HasValue)
+                    {
+                        <tr>
+                            <th>分配时间</th>
+                            <td>@Model.AssignedAt.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                        </tr>
+                    }
+
+                    @if (Model.StartedAt.HasValue)
+                    {
+                        <tr>
+                            <th>开始处理时间</th>
+                            <td>@Model.StartedAt.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                        </tr>
+                    }
+
+                    @if (Model.CompletedAt.HasValue)
+                    {
+                        <tr>
+                            <th>完成时间</th>
+
+                            <td>@Model.CompletedAt.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                        </tr>
+                    }
+
+                    @if (Model.ClosedAt.HasValue)
+                    {
+                        <tr>
+                            <th>关闭时间</th>
+                            <td>@Model.ClosedAt.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <a asp-controller="Tickets"
+           asp-action="Index"
+           class="btn btn-secondary">
+            返回我的工单
+        </a>
+
+    </div>
+</div>
